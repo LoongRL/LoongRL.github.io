@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta name="title" content="LoongRL: Reinforcement Learning for Advanced Reasoning over Long Contexts">
+  <meta name="description" content="LoongRL introduces a data-driven RL method for advanced long-context reasoning using KeyChain data synthesis, achieving frontier-level performance with 7B/14B models.">
+  <meta name="keywords" content="LoongRL, long-context reasoning, reinforcement learning, KeyChain, LLM, GRPO, multi-hop QA">
+  <meta name="author" content="Siyuan Wang, Gaokai Zhang, Li Lyna Zhang, Ning Shang, Fan Yang, Dongyao Chen, Mao Yang">
+  <meta name="robots" content="index, follow">
+  <meta name="language" content="English">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="LoongRL">
+  <meta property="og:title" content="LoongRL: Reinforcement Learning for Advanced Reasoning over Long Contexts">
+  <meta property="og:description" content="LoongRL introduces a data-driven RL method for advanced long-context reasoning using KeyChain data synthesis, achieving frontier-level performance with 7B/14B models.">
+  <meta property="og:url" content="https://loongrl.github.io">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LoongRL: Reinforcement Learning for Advanced Reasoning over Long Contexts">
+  <meta name="twitter:description" content="LoongRL introduces a data-driven RL method for advanced long-context reasoning using KeyChain data synthesis, achieving frontier-level performance with 7B/14B models.">
+
+  <meta name="citation_title" content="LoongRL: Reinforcement Learning for Advanced Reasoning over Long Contexts">
+  <meta name="citation_author" content="Wang, Siyuan">
+  <meta name="citation_author" content="Zhang, Gaokai">
+  <meta name="citation_author" content="Zhang, Li Lyna">
+  <meta name="citation_author" content="Shang, Ning">
+  <meta name="citation_author" content="Yang, Fan">
+  <meta name="citation_author" content="Chen, Dongyao">
+  <meta name="citation_author" content="Yang, Mao">
+  <meta name="citation_publication_date" content="2025">
+  <meta name="citation_conference_title" content="ICLR 2026">
+  <meta name="citation_pdf_url" content="https://arxiv.org/pdf/2510.19363.pdf">
+
+  <meta name="theme-color" content="#2563eb">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://ajax.googleapis.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+  <title>LoongRL: Reinforcement Learning for Advanced Reasoning over Long Contexts</title>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
+
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+
+  <link rel="preload" href="static/css/bulma-carousel.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="static/css/bulma-slider.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="static/css/fontawesome.all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+  <noscript>
+    <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+    <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+    <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  </noscript>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script defer src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script defer src="static/js/bulma-carousel.min.js"></script>
+  <script defer src="static/js/bulma-slider.min.js"></script>
+  <script defer src="static/js/index.js"></script>
+
+  <style>
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin: 1em 0;
+    }
+    .results-table th, .results-table td {
+      padding: 8px 10px;
+      text-align: center;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .results-table th {
+      background-color: #f5f5f5;
+      font-weight: 600;
+    }
+    .results-table .model-name {
+      text-align: left;
+      font-weight: 500;
+    }
+    .results-table .highlight-row {
+      background-color: #e8f4fd;
+      font-weight: 600;
+    }
+    .results-table .section-header {
+      background-color: #fafafa;
+      font-style: italic;
+      color: #666;
+    }
+    .results-table .best-score {
+      font-weight: 700;
+      color: #1a73e8;
+    }
+    .example-box {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 1.5em;
+      margin: 1em 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+    .example-box .box-title {
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.8em;
+      padding-bottom: 0.5em;
+      border-bottom: 2px solid #dee2e6;
+    }
+    .trajectory-box {
+      border-radius: 8px;
+      padding: 1.5em;
+      margin: 1em 0;
+      font-size: 0.85rem;
+      line-height: 1.7;
+    }
+    .trajectory-correct {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+    }
+    .trajectory-incorrect {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+    }
+    .trajectory-box .box-title {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.8em;
+      padding-bottom: 0.5em;
+    }
+    .trajectory-correct .box-title {
+      color: #166534;
+      border-bottom: 2px solid #86efac;
+    }
+    .trajectory-incorrect .box-title {
+      color: #991b1b;
+      border-bottom: 2px solid #fca5a5;
+    }
+    .green-text { color: #166534; }
+    .red-text { color: #991b1b; }
+    .key-result {
+      display: inline-block;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border: 1px solid #93c5fd;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      margin: 0.25rem;
+      font-weight: 600;
+      color: #1e40af;
+      font-size: 0.9rem;
+    }
+    .highlight-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #1a73e8, #4285f4);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin: 0 4px;
+    }
+    .venue-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #e85d1a, #f4a142);
+      color: white;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .figure-caption {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 0.5em;
+      font-style: italic;
+    }
+    .niah-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1em;
+    }
+    @media (max-width: 768px) {
+      .niah-grid {
+        grid-template-columns: 1fr;
+      }
+      .results-table {
+        font-size: 0.75rem;
+      }
+      .results-table th, .results-table td {
+        padding: 4px 5px;
+      }
+    }
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  </style>
+</head>
+<body>
+
+  <button class="scroll-to-top" onclick="scrollToTop()" title="Scroll to top" aria-label="Scroll to top">
+    <i class="fas fa-chevron-up"></i>
+  </button>
+
+  <main id="main-content">
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <h1 class="title is-1 publication-title">LoongRL: Reinforcement Learning for Advanced Reasoning over Long Contexts</h1>
+            <div class="is-size-5 publication-authors">
+              <span class="author-block">Siyuan Wang<sup>*1,2</sup>,</span>
+              <span class="author-block">Gaokai Zhang<sup>*1,3</sup>,</span>
+              <span class="author-block">Li Lyna Zhang<sup>1</sup>,</span>
+              <span class="author-block">Ning Shang<sup>1</sup>,</span>
+              <span class="author-block">Fan Yang<sup>1</sup>,</span>
+              <span class="author-block">Dongyao Chen<sup>2</sup>,</span>
+              <span class="author-block">Mao Yang<sup>1</sup></span>
+            </div>
+
+            <div class="is-size-5 publication-authors">
+              <span class="author-block"><sup>1</sup>Microsoft Research Asia &nbsp; <sup>2</sup>Shanghai Jiao Tong University &nbsp; <sup>3</sup>Carnegie Mellon University</span>
+              <br>
+              <a href="https://iclr.cc/virtual/2026/oral/10007440" target="_blank"><span class="venue-badge">ICLR 2026 Oral</span></a>
+              <br>
+              <span class="eql-cntrb"><small><sup>*</sup>Equal Contribution</small></span>
+            </div>
+
+            <div class="column has-text-centered">
+              <div class="publication-links">
+                <span class="link-block">
+                  <a href="https://arxiv.org/pdf/2510.19363.pdf" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper</span>
+                </a>
+              </span>
+
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2510.19363" target="_blank"
+                class="external-link button is-normal is-rounded is-dark">
+                <span class="icon">
+                  <i class="ai ai-arxiv"></i>
+                </span>
+                <span>arXiv</span>
+              </a>
+            </span>
+
+              <span class="link-block">
+                <a href="https://github.com/rStar-RL/LoongRL" target="_blank"
+                class="external-link button is-normal is-rounded is-dark">
+                <span class="icon">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>LoongRL Code</span>
+              </a>
+            </span>
+
+              <span class="link-block">
+                <a href="https://github.com/Wangmerlyn/KeyChain" target="_blank"
+                class="external-link button is-normal is-rounded is-dark">
+                <span class="icon">
+                  <i class="fab fa-github"></i>
+                </span>
+                <span>KeyChain</span>
+              </a>
+            </span>
+
+              <span class="link-block">
+                <a href="https://huggingface.co/datasets/OldKingMeister/LoongRL-Train-Data" target="_blank"
+                class="external-link button is-normal is-rounded is-dark">
+                <span class="icon">
+                  <i class="fas fa-database"></i>
+                </span>
+                <span>Dataset</span>
+              </a>
+            </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Abstract -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Reasoning over long contexts is essential for large language models. While reinforcement learning (RL) enhances short-context reasoning by inducing "Aha" moments in chain-of-thought, the advanced thinking patterns required for long-context reasoning remain largely unexplored, and high-difficulty RL data are scarce.
+          </p>
+          <p>
+            In this paper, we introduce <strong>LoongRL</strong>, a data-driven RL method for advanced long-context reasoning. Central to LoongRL is <em>KeyChain</em>, a synthesis approach that transforms short multi-hop QA into <em>high-difficulty</em> long-context tasks by inserting UUID chains that hide the true question among large collections of distracting documents. Solving these tasks requires the model to trace the correct chain step-by-step, identify the true question, retrieve relevant facts and reason over them to answer correctly.
+          </p>
+          <p>
+            RL training on KeyChain data induces an emergent <strong>plan&ndash;retrieve&ndash;reason&ndash;recheck</strong> reasoning pattern that generalizes far beyond training length. Models trained at 16K effectively solve 128K tasks without prohibitive full-length RL rollout costs. On Qwen2.5-7B and 14B, LoongRL substantially improves long-context multi-hop QA accuracy by <span class="highlight-badge">+23.5%</span> and <span class="highlight-badge">+21.1%</span> absolute gains. The resulting LoongRL-14B reaches a score of 74.2, rivaling much larger frontier models such as o3-mini (74.5) and DeepSeek-R1 (74.9). It also improves long-context retrieval, passes all 128K needle-in-a-haystack stress tests, and preserves short-context reasoning capabilities.
+          </p>
+          <div class="has-text-centered" style="margin-top: 1.5rem;">
+            <span class="key-result">100% NIAH Retrieval</span>
+            <span class="key-result">16K → 128K Generalization</span>
+            <span class="key-result">Rivals o3-mini & DeepSeek-R1</span>
+            <span class="key-result">Simple & Handy KeyChain</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Overview Figure -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Method Overview</h2>
+    <div class="content">
+      <p class="has-text-centered">
+        LoongRL constructs <strong>KeyChain</strong> training data by inserting UUID key-value chains into long-context documents, hiding the true question behind a chain of linked keys. The model must trace the correct chain, recover the original question, and then reason over the full context to answer.
+      </p>
+      <img src="static/images/overview.png" alt="Overview of KeyChain data construction" style="width:100%; max-width:900px; margin:0 auto; display:block;">
+      <p class="figure-caption">Figure 1: Overview of KeyChain data construction. Short multi-hop QA is transformed into high-difficulty long-context reasoning tasks.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- KeyChain Example -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">KeyChain Data Example</h2>
+    <div class="content">
+      <p class="has-text-centered" style="margin-bottom:1.5em;">
+        Below is the skeleton of a KeyChain-augmented long-context question. UUID chains are inserted among documents, with only one chain leading to the correct question.
+      </p>
+      <img src="static/images/questionexample.png" alt="KeyChain training data example" style="width:100%; max-width:850px; margin:0 auto; display:block;">
+      <p class="figure-caption">Figure 2: A skeleton of KeyChain-augmented training data used in LoongRL.</p>
+
+      <div class="example-box" style="margin-top:2em;">
+        <div class="box-title">KeyChain-Augmented Long-Context Question Template</div>
+        Please read the following text.<br>
+        &lt;Document 0&gt;<br>
+        &lt;original text&gt;<br>
+        <span style="color:#2563eb;">{"UUIDB-n": "distracting question"}</span><br>
+        &lt;original text&gt;<br>
+        &lt;Document 1&gt;<br>
+        <span style="color:#2563eb;">{"<strong>UUIDA-1</strong>": "<strong>UUIDA-2</strong>"}</span><br>
+        &lt;Document 2&gt;<br>
+        <span style="color:#2563eb;">{"UUIDB-1": "UUIDB-2"}</span><br>
+        ...<br>
+        <span style="color:#2563eb;">{"<strong>UUIDA-n</strong>": "<strong>correct question</strong>"}</span><br>
+        ...<br><br>
+        In the context above, there is one correct question to answer. The correct question can only be found by following the correct consecutive chain of key:value pairs encoded with UUID strings, starting from <span style="color:#2563eb;">"starting UUIDA-1"</span>.<br>
+        Find the correct question first, then answer it.
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Main Results -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Main Results</h2>
+    <div class="content">
+      <p class="has-text-centered" style="margin-bottom:1em;">
+        LoongRL delivers frontier-level long-context reasoning at much smaller scales (7B/14B), rivaling o3-mini and DeepSeek-R1, while preserving general short-context abilities.
+      </p>
+
+      <h3 class="title is-4">Table 1: Long-Context Reasoning &amp; General Short-Context Abilities</h3>
+      <div class="table-responsive">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="text-align:left;">Model</th>
+            <th colspan="6">Long-Context Reasoning</th>
+            <th colspan="4">General &amp; Short Reasoning</th>
+          </tr>
+          <tr>
+            <th>Avg.</th>
+            <th>HotpotQA</th>
+            <th>2WikiMQA</th>
+            <th>MuSiQue</th>
+            <th>NarrativeQA</th>
+            <th>QASPER</th>
+            <th>Avg.</th>
+            <th>MMLU</th>
+            <th>MATH</th>
+            <th>IFEval</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="model-name">o3-mini (medium)</td>
+            <td>74.5</td><td>83.0</td><td>89.0</td><td>64.0</td><td>60.7</td><td>60.5</td>
+            <td class="best-score">92.1</td><td>86.9</td><td class="best-score">98.0</td><td class="best-score">91.5</td>
+          </tr>
+          <tr>
+            <td class="model-name">DeepSeek-R1</td>
+            <td class="best-score">74.9</td><td>82.7</td><td>91.3</td><td class="best-score">72.2</td><td class="best-score">66.9</td><td>61.4</td>
+            <td>90.5</td><td class="best-score">90.8</td><td>97.3</td><td>83.3</td>
+          </tr>
+          <tr>
+            <td class="model-name">GPT-4o</td>
+            <td>64.7</td><td>82.5</td><td>78.0</td><td>54.0</td><td>60.5</td><td>48.5</td>
+            <td>82.5</td><td>88.7</td><td>74.6</td><td>84.3</td>
+          </tr>
+          <tr>
+            <td class="model-name">QwQ-32B</td>
+            <td>69.6</td><td>78.5</td><td>87.4</td><td>62.7</td><td>61.1</td><td>58.5</td>
+            <td>85.9</td><td>75.7</td><td class="best-score">98.0</td><td>83.9</td>
+          </tr>
+          <tr>
+            <td class="model-name">R1-Distill-LLaMA-70B</td>
+            <td>65.4</td><td>76.1</td><td>85.0</td><td>61.9</td><td>53.4</td><td>50.5</td>
+            <td>85.4</td><td>82.4</td><td>94.5</td><td>79.3</td>
+          </tr>
+          <tr class="section-header"><td colspan="11" style="text-align:center;">7B Scale</td></tr>
+          <tr>
+            <td class="model-name">Qwen2.5-7B-Instruct</td>
+            <td>48.9</td><td>69.5</td><td>50.5</td><td>34.0</td><td>44.5</td><td>46.0</td>
+            <td>73.5</td><td>73.4</td><td>76.0</td><td>71.2</td>
+          </tr>
+          <tr>
+            <td class="model-name">R1-Distill-Qwen-7B</td>
+            <td>31.2</td><td>40.2</td><td>53.3</td><td>11.1</td><td>8.9</td><td>42.5</td>
+            <td>69.9</td><td>62.3</td><td>92.8</td><td>54.7</td>
+          </tr>
+          <tr class="highlight-row">
+            <td class="model-name"><strong>LoongRL-7B</strong></td>
+            <td><strong>72.4</strong></td><td><strong>83.1</strong></td><td><strong>91.1</strong></td><td><strong>65.6</strong></td><td><strong>58.4</strong></td><td><strong>63.6</strong></td>
+            <td><strong>75.0</strong></td><td><strong>76.2</strong></td><td>78.0</td><td>70.9</td>
+          </tr>
+          <tr class="section-header"><td colspan="11" style="text-align:center;">14B+ Scale</td></tr>
+          <tr>
+            <td class="model-name">Qwen2.5-14B-Instruct</td>
+            <td>53.1</td><td>74.0</td><td>60.5</td><td>36.5</td><td>48.5</td><td>46.0</td>
+            <td>81.3</td><td>79.4</td><td>83.4</td><td>81.0</td>
+          </tr>
+          <tr>
+            <td class="model-name">R1-Distill-Qwen-14B</td>
+            <td>64.9</td><td>77.5</td><td>87.0</td><td>58.0</td><td>51.0</td><td>51.0</td>
+            <td>81.0</td><td>76.6</td><td>93.9</td><td>72.6</td>
+          </tr>
+          <tr>
+            <td class="model-name">R1-Distill-Qwen-32B</td>
+            <td>65.5</td><td>76.3</td><td>87.6</td><td>59.8</td><td>52.7</td><td>50.9</td>
+            <td>82.4</td><td>80.5</td><td>94.3</td><td>72.5</td>
+          </tr>
+          <tr>
+            <td class="model-name">QwenLong-L1-32B</td>
+            <td>70.1</td><td>80.7</td><td>89.1</td><td>65.2</td><td>58.6</td><td>56.7</td>
+            <td>84.1</td><td>78.5</td><td>95.2</td><td>78.6</td>
+          </tr>
+          <tr class="highlight-row">
+            <td class="model-name"><strong>LoongRL-14B</strong></td>
+            <td><strong>74.2</strong></td><td><strong>82.2</strong></td><td class="best-score"><strong>93.3</strong></td><td><strong>67.5</strong></td><td><strong>63.4</strong></td><td class="best-score"><strong>64.5</strong></td>
+            <td>80.7</td><td>80.5</td><td>83.2</td><td>78.4</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Generalization Results -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Length Generalization</h2>
+    <div class="content">
+      <p class="has-text-centered" style="margin-bottom:1em;">
+        While trained only on 16K contexts, LoongRL generalizes impressively to contexts up to 128K tokens.
+      </p>
+
+      <h3 class="title is-4">Table 2: Generalization from 16K Training to 128K Evaluation</h3>
+      <div class="table-responsive">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="text-align:left;">Model</th>
+            <th colspan="3">NarrativeQA</th>
+            <th colspan="4">RULER</th>
+          </tr>
+          <tr>
+            <th>0-16K</th><th>16K-32K</th><th>32K-64K</th>
+            <th>16K</th><th>32K</th><th>64K</th><th>128K</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="model-name">Qwen2.5-7B-Instruct</td>
+            <td>55.7</td><td>35.2</td><td>42.4</td>
+            <td>92.3</td><td>89.5</td><td>81.8</td><td>69.4</td>
+          </tr>
+          <tr>
+            <td class="model-name">R1-Distill-Qwen-7B</td>
+            <td>55.7</td><td>35.2</td><td>42.4</td>
+            <td>18.9</td><td>4.4</td><td>1.4</td><td>0.9</td>
+          </tr>
+          <tr class="highlight-row">
+            <td class="model-name"><strong>LoongRL-7B</strong></td>
+            <td><strong>69.8</strong></td><td><strong>47.4</strong></td><td><strong>57.2</strong></td>
+            <td><strong>93.4</strong></td><td><strong>91.4</strong></td><td><strong>86.2</strong></td><td><strong>76.8</strong></td>
+          </tr>
+          <tr class="section-header"><td colspan="8"></td></tr>
+          <tr>
+            <td class="model-name">Qwen2.5-14B-Instruct</td>
+            <td>55.7</td><td>40.7</td><td>48.3</td>
+            <td>93.4</td><td>92.5</td><td>82.3</td><td>73.6</td>
+          </tr>
+          <tr>
+            <td class="model-name">R1-Distill-Qwen-14B</td>
+            <td>63.0</td><td>35.9</td><td>54.6</td>
+            <td>85.7</td><td>82.0</td><td>60.2</td><td>28.2</td>
+          </tr>
+          <tr>
+            <td class="model-name">R1-Distill-Qwen-32B</td>
+            <td>57.4</td><td>44.4</td><td>58.9</td>
+            <td>90.3</td><td>88.9</td><td>71.5</td><td>40.9</td>
+          </tr>
+          <tr>
+            <td class="model-name">QwenLong-L1-32B</td>
+            <td>65.9</td><td>48.1</td><td>60.0</td>
+            <td>87.6</td><td>86.8</td><td>80.6</td><td>70.2</td>
+          </tr>
+          <tr class="highlight-row">
+            <td class="model-name"><strong>LoongRL-14B</strong></td>
+            <td><strong>69.5</strong></td><td><strong>55.2</strong></td><td><strong>64.3</strong></td>
+            <td><strong>95.4</strong></td><td><strong>95.1</strong></td><td><strong>87.1</strong></td><td><strong>79.9</strong></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Ablation Studies -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Ablation Studies</h2>
+    <div class="content">
+      <div class="columns">
+        <div class="column">
+          <h3 class="title is-5">KeyChain Data Effectiveness</h3>
+          <div class="table-responsive">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th style="text-align:left;">Model</th>
+                <th>HotpotQA</th><th>2WikiMQA</th><th>MuSiQue</th><th>NarQA</th><th>QASPER</th><th>Avg.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="model-name">Qwen2.5-7B-Instruct</td>
+                <td>69.5</td><td>50.5</td><td>34.0</td><td>44.5</td><td>46.0</td><td>48.9</td>
+              </tr>
+              <tr>
+                <td class="model-name">LoongRL-7B (no KeyChain)</td>
+                <td>80.3</td><td>84.7</td><td>58.5</td><td>53.0</td><td>54.5</td><td>66.2</td>
+              </tr>
+              <tr class="highlight-row">
+                <td class="model-name"><strong>LoongRL-7B</strong></td>
+                <td><strong>83.1</strong></td><td><strong>91.1</strong></td><td><strong>65.6</strong></td><td><strong>58.4</strong></td><td><strong>63.6</strong></td><td><strong>72.4</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="columns" style="margin-top:1.5em;">
+        <div class="column">
+          <h3 class="title is-5">Answer Verifier Comparison</h3>
+          <div class="table-responsive">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th style="text-align:left;">Reward Verifier</th>
+                <th>HotpotQA</th><th>2WikiMQA</th><th>MuSiQue</th><th>NarQA</th><th>QASPER</th><th>Avg.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="model-name">F1 score</td>
+                <td>79.5</td><td>86.4</td><td>58.0</td><td>46.6</td><td>55.0</td><td>65.1</td>
+              </tr>
+              <tr>
+                <td class="model-name">LLM-as-a-judge</td>
+                <td>80.0</td><td>87.6</td><td>60.0</td><td>52.3</td><td>54.5</td><td>65.2</td>
+              </tr>
+              <tr>
+                <td class="model-name">Exact match</td>
+                <td>82.7</td><td><strong>91.3</strong></td><td><strong>66.3</strong></td><td>51.0</td><td>54.9</td><td>69.2</td>
+              </tr>
+              <tr class="highlight-row">
+                <td class="model-name"><strong>Two-way Substring (ours)</strong></td>
+                <td><strong>83.1</strong></td><td>91.1</td><td>65.6</td><td><strong>58.4</strong></td><td><strong>63.6</strong></td><td><strong>72.4</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Training Curves -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Training Dynamics</h2>
+    <div class="content">
+      <p class="has-text-centered">
+        Long-context reasoning accuracy and training response lengths throughout RL training, showing consistent improvements across each stage.
+      </p>
+      <img src="static/images/training_curves.png" alt="Training curves for 7B and 14B models" style="width:100%; max-width:900px; margin:0 auto; display:block;">
+      <p class="figure-caption">Figure 3: Long-context reasoning accuracy and training response lengths throughout RL training for both 7B and 14B models.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- Emergent Reasoning Pattern -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Emergent Reasoning Pattern</h2>
+    <div class="content">
+      <p class="has-text-centered" style="margin-bottom:1em;">
+        RL training with KeyChain data induces a structured <strong>plan&ndash;retrieve&ndash;reason&ndash;recheck</strong> reasoning pattern. Below we contrast two models on the same question.
+      </p>
+      <img src="static/images/reasoningpattern.png" alt="Emergent reasoning patterns" style="width:100%; max-width:900px; margin:0 auto; display:block;">
+      <p class="figure-caption">Figure 4: Comparison of reasoning patterns. (a) KeyChain-trained model exhibits structured plan-retrieve-reason-recheck. (b) Non-KeyChain model shows mixed reasoning-with-retrieval.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- Trajectory Examples -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Trajectory Examples</h2>
+    <div class="content">
+      <p class="has-text-centered" style="margin-bottom:1em;">
+        <strong>Question:</strong> <em>Gary L. Bennett was a part of the space missions that have a primary destination of what celestial body?</em>
+      </p>
+
+      <div class="trajectory-box trajectory-correct">
+        <div class="box-title">KeyChain-Trained Model (Correct Answer: the Sun)</div>
+        <p><span class="green-text"><strong>[Plan]</strong> To determine the primary destination of the space missions that Gary L. Bennett was a part of, we need to identify the space missions he worked on from the given passages and then find the primary destination of those missions.</span></p>
+        <p><strong>[Retrieve]</strong> From Passage 1: "His professional career has included work on the Voyager, Galileo, and Ulysses space missions."</p>
+        <p><span class="green-text"><strong>[Reason]</strong> Now, we need to find the primary destination of these missions. Let's check Passage 5 for information about the Ulysses mission:</span></p>
+        <p><strong>[Retrieve]</strong> "Ulysses was a robotic space probe whose primary mission was to orbit the Sun and study it at all latitudes."</p>
+        <p>Therefore, the primary destination of the Ulysses space mission is the Sun.</p>
+        <p><span class="green-text"><strong>[Recheck]</strong> Although we should check the other missions mentioned (Voyager and Galileo) for completeness... the question specifically asks about the space missions that Gary L. Bennett was a part of, and the Ulysses mission is clearly stated to have the Sun as its primary destination.</span></p>
+        <p style="text-align:right; font-weight:700; color:#166534;">Answer: the Sun &#10003;</p>
+      </div>
+
+      <div class="trajectory-box trajectory-incorrect">
+        <div class="box-title">Non-KeyChain Model (Incorrect Answer: Jupiter)</div>
+        <p><span class="red-text"><strong>[No systematic decomposition]</strong></span></p>
+        <p>First, we need to identify the space missions mentioned in the passage that Gary L. Bennett was involved with... Bennett was involved in several space missions, including the Voyager, Galileo, and Ulysses space missions.</p>
+        <p><span class="red-text">From these statements, we can deduce that Bennett was involved in missions to Jupiter, Saturn, Uranus, Neptune, and the Sun.</span> However, the primary destinations mentioned directly in relation to Bennett's roles are Jupiter for the Galileo and Ulysses missions...</p>
+        <p><span class="red-text"><strong>[Premature conclusion without recheck]</strong> Given the specific mention of Bennett's role in the Galileo mission to Jupiter... Jupiter stands out as a primary destination.</span></p>
+        <p style="text-align:right; font-weight:700; color:#991b1b;">Answer: Jupiter &#10007;</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- NIAH Results -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Needle-in-a-Haystack Retrieval</h2>
+    <div class="content">
+      <p class="has-text-centered" style="margin-bottom:1em;">
+        LoongRL achieves perfect 100% retrieval accuracy on the Needle-in-a-Haystack benchmark, while other models struggle at various context depths.
+      </p>
+      <div class="niah-grid">
+        <div>
+          <img src="static/images/niah_loongrl_7b.png" alt="NIAH LoongRL-7B" style="width:100%;">
+          <p class="figure-caption">LoongRL-7B (100% accuracy)</p>
+        </div>
+        <div>
+          <img src="static/images/niah_r1_7b.png" alt="NIAH R1-Distill-Qwen-7B" style="width:100%;">
+          <p class="figure-caption">R1-Distill-Qwen-7B</p>
+        </div>
+        <div>
+          <img src="static/images/niah_qwen_7b.png" alt="NIAH Qwen2.5-7B-Instruct" style="width:100%;">
+          <p class="figure-caption">Qwen2.5-7B-Instruct</p>
+        </div>
+        <div>
+          <img src="static/images/niah_qwenlong_32b.png" alt="NIAH QwenLong-L1-32B" style="width:100%;">
+          <p class="figure-caption">QwenLong-L1-32B</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Retrieval Trajectory Example -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Retrieval Trajectory Example</h2>
+    <div class="content">
+      <p class="has-text-centered" style="margin-bottom:1em;">
+        On the RULER variable tracking task, the KeyChain-trained model performs step-by-step, human-readable retrieval.
+      </p>
+
+      <div class="trajectory-box trajectory-correct">
+        <div class="box-title">LoongRL (with KeyChain): Long-Context Retrieval on RULER VT</div>
+        <p>&lt;think&gt; Let's break it down step by step:</p>
+        <p>1. <span style="color:#d97706">VAR QPE = 64886</span> &mdash; assigns 64886 to QPE.</p>
+        <p>2. <span style="color:#d97706">VAR SEJ = VAR QPE</span> &mdash; assigns QPE (64886) to SEJ.</p>
+        <p>3. <span style="color:#d97706">VAR ZQO = VAR SEJ</span> &mdash; assigns SEJ (64886) to ZQO.</p>
+        <p>4-5. ... (chain continues)</p>
+        <p>6. <span style="color:#d97706">VAR SGMLJ = 92018</span></p>
+        <p>7. <span style="color:#d97706">VAR PBDME = VAR SGMLJ</span> &mdash; assigns 92018 to PBDME.</p>
+        <p>8. <span style="color:#d97706">VAR EANSM = VAR PBDME</span> &mdash; assigns 92018 to EANSM.</p>
+        <p>9. <span style="color:#d97706">VAR QPKBX = VAR EANSM</span> &mdash; assigns 92018 to QPKBX.</p>
+        <p>10. <span style="color:#d97706">VAR YYZJM = VAR EANSM</span> &mdash; assigns 92018 to YYZJM. &lt;/think&gt;</p>
+        <p style="text-align:right; font-weight:700; color:#166534;">Answer: SGMLJ, PBDME, EANSM, QPKBX, YYZJM &#10003;</p>
+      </div>
+
+      <div class="trajectory-box trajectory-incorrect">
+        <div class="box-title">Without KeyChain: Long-Context Retrieval on RULER VT</div>
+        <p>&lt;think&gt; The reasoning process involves identifying the lines where the value 92018 is first assigned to a variable, which is <span class="red-text">"VAR PBDME = 92018"</span>. Then, tracking this value through all subsequent assignments... The variables that inherit this value are <span class="red-text">EANSM, YYZJM, SGMLJ, and FAI</span>. &lt;/think&gt;</p>
+        <p style="text-align:right; font-weight:700; color:#991b1b;">Answer: PBDME, EANSM, YYZJM, SGMLJ, FAI &#10007; (conflates chains, includes wrong variable FAI)</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- BibTeX -->
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <div class="bibtex-header">
+      <h2 class="title">BibTeX</h2>
+      <button class="copy-bibtex-btn" onclick="copyBibTeX()" title="Copy BibTeX to clipboard">
+        <i class="fas fa-copy"></i>
+        <span class="copy-text">Copy</span>
+      </button>
+    </div>
+    <pre id="bibtex-code"><code>@misc{wang2025loongrlreinforcementlearningadvanced,
+      title={LoongRL: Reinforcement Learning for Advanced Reasoning over Long Contexts},
+      author={Siyuan Wang and Gaokai Zhang and Li Lyna Zhang and Ning Shang and Fan Yang and Dongyao Chen and Mao Yang},
+      year={2025},
+      eprint={2510.19363},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2510.19363},
+}</code></pre>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
+            You are free to borrow the source code of this website, we just ask that you link back to this page in the footer. <br> This website is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
